@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="postBodyType">
+        <item>application/json</item>
+        <item>application/x-www-form-urlencoded</item>
+        <item>application/xml</item>
+        <item>text/plain</item>
+        <item>text/html</item>
+        <item>multipart/form-data</item>
+        <item>application/atom+xml</item>
+    </string-array>
+</resources>
