@@ -25,4 +25,6 @@ public class RestTestApplication extends Application {
                         "error and try again";
     public static final String HEADER_MISSING_VALUE = "The header value is missing. Please fix " +
                         "the error and try again";
+    public static final String SUPPLY_HEADER = "You are choosing to send a request body of your own type. Please " +
+                        "enter the 'Content-Type' header manually as the application will no longer send this header.";
 }

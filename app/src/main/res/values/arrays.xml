@@ -8,5 +8,6 @@
         <item>text/html</item>
         <item>multipart/form-data</item>
         <item>application/atom+xml</item>
+        <item>Custom</item>
     </string-array>
 </resources>

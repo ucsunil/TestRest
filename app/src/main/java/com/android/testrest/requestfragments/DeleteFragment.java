@@ -1,5 +1,6 @@
 package com.android.testrest.requestfragments;
 
+
 import android.app.Fragment;
 import android.content.Context;
 import android.graphics.Color;
@@ -10,11 +11,14 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -38,20 +43,26 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class GetFragment extends Fragment implements View.OnClickListener {
+/**
+ * A simple {@link Fragment} subclass.
+ *
+ */
+public class DeleteFragment extends Fragment implements View.OnClickListener {
 
     ArrayList<HeaderHelper> headers = null;
     RequestHeaderAdapter requestHeaderAdapter = null;
+    Button addHeader = null;
     ListView headersList = null;
-    EditText urlContent = null;
+    Spinner contentType = null;
+    EditText urlContent = null, postBody = null;
     LinearLayout resultArea = null;
     TextView resultMessage = null;
-    Button addHeader = null, reset = null, get = null, viewResponse = null;
+    Button reset = null, delete = null, viewResponse = null;
     Map<String, List<String>> resultHeaders = null;
     String responseMessage = null;
 
-    public static GetFragment newInstance() {
-        GetFragment fragment = new GetFragment();
+    public static DeleteFragment newInstance() {
+        DeleteFragment fragment = new DeleteFragment();
         return fragment;
     }
 
@@ -59,6 +70,7 @@ public class GetFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         headers = new ArrayList<HeaderHelper>();
         requestHeaderAdapter = new RequestHeaderAdapter(getActivity(), R.layout.fragment_get, headers);
     }
@@ -66,7 +78,7 @@ public class GetFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_get, container, false);
+        View view = inflater.inflate(R.layout.fragment_post_put_delete, container, false);
         return view;
     }
 
@@ -77,16 +89,31 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         headersList = (ListView) view.findViewById(R.id.headers);
         headersList.setAdapter(requestHeaderAdapter);
         urlContent = (EditText) view.findViewById(R.id.url);
+        contentType = (Spinner) view.findViewById(R.id.content_type);
+        contentType.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                TextView textView = (TextView) view;
+                if(textView.getText().toString().equals("Custom")) {
+                    Toast.makeText(getActivity(),RestTestApplication.SUPPLY_HEADER, Toast.LENGTH_LONG).show();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                // Do nothing
+            }
+        });
+        postBody = (EditText) view.findViewById(R.id.post_body);
         reset = (Button) view.findViewById(R.id.reset);
         reset.setOnClickListener(this);
-        get = (Button) view.findViewById(R.id.get_request);
-        get.setOnClickListener(this);
+        delete = (Button) view.findViewById(R.id.request);
+        delete.setText(R.string.delete);
+        delete.setOnClickListener(this);
         viewResponse = (Button) view.findViewById(R.id.view_response);
         viewResponse.setOnClickListener(this);
         resultArea = (LinearLayout) view.findViewById(R.id.result_area);
         resultMessage = (TextView) view.findViewById(R.id.result_message);
     }
-
 
     @Override
     public void onClick(View view) {
@@ -122,17 +149,19 @@ public class GetFragment extends Fragment implements View.OnClickListener {
                 headers.clear();
                 requestHeaderAdapter.notifyDataSetChanged();
             }
+            postBody.setText("");
             resultArea.setBackgroundColor(Color.WHITE);
             resultMessage.setText("");
             reset.setEnabled(false);
             viewResponse.setEnabled(false);
-        }else if(view.getId() == R.id.get_request) {
+        }else if(view.getId() == R.id.request) {
+            test();
             int code = 1;
             if(headers.size() > 0) {
                 code = saveLastHeader();
             }
             if(code == 1) {
-                executeGet();
+                executePost();
             }
         } else if(view.getId() == R.id.view_response) {
             showResponseDialogFragment();
@@ -167,7 +196,7 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         return -1;
     }
 
-    private void executeGet() {
+    private void executePost() {
         URL url = null;
         if(TextUtils.isEmpty(urlContent.getText().toString())) {
             showErrorPopup(RestTestApplication.EMPTY_URL);
@@ -182,18 +211,18 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         }
         String[] parts = urlContent.getText().toString().split("://");
         if(parts[0].equals("http")) {
-           new GetHttpTask().execute(url);
+            new DeleteHttpTask().execute(url);
         } else if(parts[0].equals("https")) {
-           new GetHttpsTask().execute(url);
+            new DeleteHttpsTask().execute(url);
         } else {
-           // TO DO...
+            // TO DO...
         }
     }
 
     /**
      * Method to display the popup message. I am using popups to display the more sever error
      * messages
-     * @param errorMessage The message that the opup should display
+     * @param errorMessage The message that the popup should display
      */
     private void showErrorPopup(String errorMessage) {
         LayoutInflater layoutInflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -218,9 +247,12 @@ public class GetFragment extends Fragment implements View.OnClickListener {
      * and the response body in a dialog fragment
      */
     private void showResponseDialogFragment() {
-        HashMap<String, List<String>> hashmap = new HashMap<String, List<String>>();
-        for(Map.Entry<String, List<String>> entry : resultHeaders.entrySet()) {
-            hashmap.put(entry.getKey(), entry.getValue());
+        HashMap<String, List<String>> hashmap = null;
+        if(resultHeaders != null) {
+            hashmap = new HashMap<String, List<String>>();
+            for(Map.Entry<String, List<String>> entry : resultHeaders.entrySet()) {
+                hashmap.put(entry.getKey(), entry.getValue());
+            }
         }
         Bundle bundle = new Bundle();
         bundle.putSerializable("HashMap", hashmap);
@@ -231,24 +263,40 @@ public class GetFragment extends Fragment implements View.OnClickListener {
     }
 
     /**
-     * The actual Http Get request is performed in the background by using the GetHttpTask
+     * The actual Http Delete request is performed in the background by using the PostHttpTask
      */
-    private class GetHttpTask extends AsyncTask<URL, Void, Integer> {
+    private class DeleteHttpTask extends AsyncTask<URL, Void, Integer> {
 
         @Override
         protected Integer doInBackground(URL... urls) {
             URL url = urls[0];
             int code = -1;
+            String payload = postBody.getText().toString();
+            String payloadType = contentType.getSelectedItem().toString();
             HttpURLConnection connection = null;
             try {
                 connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("DELETE");
+                connection.setDoOutput(true);
+                connection.setDoInput(true);
+                boolean contentTypeInHeaderFlag = false;
                 if(headers.size() > 0) {
                     for(HeaderHelper header : headers) {
                         if(!TextUtils.isEmpty(header.getHeaderKey()) && !TextUtils.isEmpty(header.getHeaderValue())) {
                             connection.setRequestProperty(header.getHeaderKey(), header.getHeaderValue());
+                            if(header.getHeaderKey().equals("Content-Type")) {
+                                contentTypeInHeaderFlag = true;
+                            }
                         }
                     }
                 }
+                if(!contentTypeInHeaderFlag && !payloadType.equals("Custom")) {
+                    connection.addRequestProperty("Content-Type", payloadType);
+                }
+                OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+                writer.write(payload);
+                writer.flush();
+                writer.close();
                 code = connection.getResponseCode();
                 InputStream stream = connection.getInputStream();
                 BufferedReader reader = null;
@@ -265,6 +313,7 @@ public class GetFragment extends Fragment implements View.OnClickListener {
                     if(reader != null) {
                         try {
                             reader.close();
+                            stream.close();
                         } catch (IOException ex) {
                             ex.printStackTrace();
                         }
@@ -311,24 +360,40 @@ public class GetFragment extends Fragment implements View.OnClickListener {
     }
 
     /**
-     * The actual Https Get request is performed in the background by using the GetHttpTask
+     * The actual Https Delete request is performed in the background by using the PostHttpTask
      */
-    private class GetHttpsTask extends AsyncTask<URL, Void, Integer> {
+    private class DeleteHttpsTask extends AsyncTask<URL, Void, Integer> {
 
         @Override
         protected Integer doInBackground(URL... urls) {
             URL url = urls[0];
             int code = -1;
+            String payload = postBody.getText().toString();
+            String payloadType = contentType.getSelectedItem().toString();
             HttpsURLConnection connection = null;
             try {
                 connection = (HttpsURLConnection) url.openConnection();
+                connection.setRequestMethod("DELETE");
+                connection.setDoOutput(true);
+                connection.setDoInput(true);
+                boolean contentTypeInHeaderFlag = false;
                 if(headers.size() > 0) {
                     for(HeaderHelper header : headers) {
                         if(!TextUtils.isEmpty(header.getHeaderKey()) && !TextUtils.isEmpty(header.getHeaderValue())) {
                             connection.setRequestProperty(header.getHeaderKey(), header.getHeaderValue());
+                            if(header.getHeaderKey().equals("Content-Type")) {
+                                contentTypeInHeaderFlag = true;
+                            }
                         }
                     }
                 }
+                if(!contentTypeInHeaderFlag && !payloadType.equals("Custom")) {
+                    connection.addRequestProperty("Content-Type", payloadType);
+                }
+                OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+                writer.write(payload);
+                writer.flush();
+                writer.close();
                 code = connection.getResponseCode();
                 InputStream stream = connection.getInputStream();
                 BufferedReader reader = null;
@@ -345,6 +410,7 @@ public class GetFragment extends Fragment implements View.OnClickListener {
                     if(reader != null) {
                         try {
                             reader.close();
+                            stream.close();
                         } catch (IOException ex) {
                             ex.printStackTrace();
                         }
@@ -389,4 +455,15 @@ public class GetFragment extends Fragment implements View.OnClickListener {
             }
         }
     }
+
+    private void test() {
+        urlContent.setText("http://paperapi-qa.stg-openclass.com/nextext-api/api/account/login?withIdpResponse=true");
+        postBody.setText("{" +
+                "\"userName\":\"p.siddhartha1\"," +
+                "\"password\":\"india1234\"," +
+                "\"appKey\":\"NEXT_TEXT_01\"" +
+                "}");
+    }
+
+
 }

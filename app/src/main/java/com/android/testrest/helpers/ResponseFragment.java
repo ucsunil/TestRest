@@ -40,9 +40,6 @@ public class ResponseFragment extends DialogFragment {
         fragment.setArguments(bundle);
         return fragment;
     }
-    public ResponseFragment() {
-        // Required empty public constructor
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,7 +50,7 @@ public class ResponseFragment extends DialogFragment {
         if (bundle != null) {
             responseMessage = bundle.getString("ResponseMessage");
             responseHeaders = (HashMap<String, List<String>>) bundle.getSerializable("HashMap");
-            if(responseHeaders.size() > 0) {
+            if(responseHeaders != null) {
                 for(Map.Entry<String, List<String>> entry : responseHeaders.entrySet()) {
                     HeaderHelper headerHelper = new HeaderHelper();
                     headerHelper.setHeaderKey(entry.getKey());

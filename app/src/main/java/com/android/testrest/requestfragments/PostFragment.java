@@ -11,11 +11,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,10 +51,11 @@ public class PostFragment extends Fragment implements View.OnClickListener {
     RequestHeaderAdapter requestHeaderAdapter = null;
     Button addHeader = null;
     ListView headersList = null;
+    Spinner contentType = null;
     EditText urlContent = null, postBody = null;
     LinearLayout resultArea = null;
     TextView resultMessage = null;
-    Button reset = null, get = null, viewResponse = null;
+    Button reset = null, post = null, viewResponse = null;
     Map<String, List<String>> resultHeaders = null;
     String responseMessage = null;
 
@@ -73,7 +76,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_post, container, false);
+        View view = inflater.inflate(R.layout.fragment_post_put_delete, container, false);
         return view;
     }
 
@@ -84,11 +87,26 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         headersList = (ListView) view.findViewById(R.id.headers);
         headersList.setAdapter(requestHeaderAdapter);
         urlContent = (EditText) view.findViewById(R.id.url);
+        contentType = (Spinner) view.findViewById(R.id.content_type);
+        contentType.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                TextView textView = (TextView) view;
+                if(textView.getText().toString().equals("Custom")) {
+                    Toast.makeText(getActivity(),RestTestApplication.SUPPLY_HEADER, Toast.LENGTH_LONG).show();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                // Do nothing
+            }
+        });
         postBody = (EditText) view.findViewById(R.id.post_body);
         reset = (Button) view.findViewById(R.id.reset);
         reset.setOnClickListener(this);
-        get = (Button) view.findViewById(R.id.get_request);
-        get.setOnClickListener(this);
+        post = (Button) view.findViewById(R.id.request);
+        post.setText(R.string.post);
+        post.setOnClickListener(this);
         viewResponse = (Button) view.findViewById(R.id.view_response);
         viewResponse.setOnClickListener(this);
         resultArea = (LinearLayout) view.findViewById(R.id.result_area);
@@ -134,7 +152,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             resultMessage.setText("");
             reset.setEnabled(false);
             viewResponse.setEnabled(false);
-        }else if(view.getId() == R.id.get_request) {
+        }else if(view.getId() == R.id.request) {
             test();
             int code = 1;
             if(headers.size() > 0) {
@@ -202,7 +220,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
     /**
      * Method to display the popup message. I am using popups to display the more sever error
      * messages
-     * @param errorMessage The message that the opup should display
+     * @param errorMessage The message that the popup should display
      */
     private void showErrorPopup(String errorMessage) {
         LayoutInflater layoutInflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -252,20 +270,27 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             URL url = urls[0];
             int code = -1;
             String payload = postBody.getText().toString();
+            String payloadType = contentType.getSelectedItem().toString();
             HttpURLConnection connection = null;
             try {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setDoInput(true);
+                boolean contentTypeInHeaderFlag = false;
                 if(headers.size() > 0) {
                     for(HeaderHelper header : headers) {
                         if(!TextUtils.isEmpty(header.getHeaderKey()) && !TextUtils.isEmpty(header.getHeaderValue())) {
                             connection.setRequestProperty(header.getHeaderKey(), header.getHeaderValue());
+                            if(header.getHeaderKey().equals("Content-Type")) {
+                                contentTypeInHeaderFlag = true;
+                            }
                         }
                     }
                 }
-                // connection.addRequestProperty("Content-Type", "application/json");
+                if(!contentTypeInHeaderFlag && !payloadType.equals("Custom")) {
+                    connection.addRequestProperty("Content-Type", payloadType);
+                }
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(payload);
                 writer.flush();
@@ -342,17 +367,27 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             URL url = urls[0];
             int code = -1;
             String payload = postBody.getText().toString();
+            String payloadType = contentType.getSelectedItem().toString();
             HttpsURLConnection connection = null;
             try {
                 connection = (HttpsURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setDoInput(true);
+                boolean contentTypeInHeaderFlag = false;
                 if(headers.size() > 0) {
                     for(HeaderHelper header : headers) {
                         if(!TextUtils.isEmpty(header.getHeaderKey()) && !TextUtils.isEmpty(header.getHeaderValue())) {
                             connection.setRequestProperty(header.getHeaderKey(), header.getHeaderValue());
+                            if(header.getHeaderKey().equals("Content-Type")) {
+                                contentTypeInHeaderFlag = true;
+                            }
                         }
                     }
                 }
-                connection.addRequestProperty("Content-Type", "application/json");
+                if(!contentTypeInHeaderFlag && !payloadType.equals("Custom")) {
+                    connection.addRequestProperty("Content-Type", payloadType);
+                }
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(payload);
                 writer.flush();

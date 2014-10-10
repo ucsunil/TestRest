@@ -11,8 +11,10 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import com.android.testrest.requestfragments.DeleteFragment;
 import com.android.testrest.requestfragments.GetFragment;
 import com.android.testrest.requestfragments.PostFragment;
+import com.android.testrest.requestfragments.PutFragment;
 
 
 public class RestHome extends Activity implements AdapterView.OnItemClickListener {
@@ -22,6 +24,8 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
     private ListView choices;
     private GetFragment getFragment = null;
     private PostFragment postFragment = null;
+    private PutFragment putFragment = null;
+    private DeleteFragment deleteFragment = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,11 +97,21 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
     }
 
     private void showPutFragment() {
-
+        if(putFragment == null) {
+            putFragment = PutFragment.newInstance();
+        }
+        if(!putFragment.isVisible()) {
+            getFragmentManager().beginTransaction().replace(R.id.content, putFragment).commit();
+        }
     }
 
     private void showDeleteFragment() {
-
+        if(deleteFragment == null) {
+            deleteFragment = DeleteFragment.newInstance();
+        }
+        if(!deleteFragment.isVisible()) {
+            getFragmentManager().beginTransaction().replace(R.id.content, deleteFragment).commit();
+        }
     }
 
 }
