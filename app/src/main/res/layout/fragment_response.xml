@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.android.testrest.helpers.ResponseFragment">
+    tools:context="com.android.testrest.helpers.ResponseDialogFragment">
 
     <ListView
         android:id="@+id/response_headers"

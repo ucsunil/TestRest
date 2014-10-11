@@ -2,6 +2,7 @@ package com.android.testrest.requestfragments;
 
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,14 +20,14 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.testrest.R;
 import com.android.testrest.RestTestApplication;
 import com.android.testrest.customadapters.RequestHeaderAdapter;
 import com.android.testrest.helpers.ActionModeListener;
+import com.android.testrest.helpers.HeaderDialogFragment;
 import com.android.testrest.helpers.HeaderHelper;
-import com.android.testrest.helpers.ResponseFragment;
+import com.android.testrest.helpers.ResponseDialogFragment;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -54,7 +55,9 @@ public class GetFragment extends Fragment implements View.OnClickListener {
     Button addHeader = null, reset = null, get = null, viewResponse = null;
     Map<String, List<String>> resultHeaders = null;
     String responseMessage = null;
-    boolean isLastHeaderSaved = false;
+    private final int HEADER_CODE = 1;
+    private final String HEADER_KEY = "HEADER_KEY";
+    private final String HEADER_VALUE = "HEADER_VALUE";
 
     public static GetFragment newInstance() {
         GetFragment fragment = new GetFragment();
@@ -87,7 +90,6 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         headersList.setOnItemLongClickListener(new ListView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
-                saveLastHeader();
                 headersList.setItemChecked(position, true);
                 return true;
             }
@@ -103,36 +105,21 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         resultMessage = (TextView) view.findViewById(R.id.result_message);
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == requestCode) {
+            HeaderHelper headerHelper = new HeaderHelper();
+            headerHelper.setHeaderKey(data.getStringExtra(HEADER_KEY));
+            headerHelper.setHeaderValue(data.getStringExtra(HEADER_VALUE));
+            headers.add(headerHelper);
+            requestHeaderAdapter.notifyDataSetChanged();
+        }
+    }
 
     @Override
     public void onClick(View view) {
         if(view.getId() == R.id.add_header) {
-            isLastHeaderSaved = false;
-            if(headersList.getCount() == 0) {
-                HeaderHelper header = new HeaderHelper();
-                headers.add(header);
-                requestHeaderAdapter.notifyDataSetChanged();
-                return;
-            }
-            int position = headers.size() - 1;
-            EditText headerKey = (EditText) headersList.getChildAt(position).findViewById(R.id.header_key);
-            String key = headerKey.getText().toString();
-            EditText headerValue = (EditText) headersList.getChildAt(position).findViewById(R.id.header_value);
-            String value = headerValue.getText().toString();
-
-            HeaderHelper header = headers.get(position);
-            if(!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
-                header.setHeaderKey(key);
-                header.setHeaderValue(value);
-                headers.add(new HeaderHelper());
-                requestHeaderAdapter.notifyDataSetChanged();
-            } else if(!TextUtils.isEmpty(key) && TextUtils.isEmpty(value)) {
-                Toast.makeText(getActivity(), RestTestApplication.ADD_HEADER_MISSING_VALUE, Toast.LENGTH_LONG).show();
-            } else if(TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
-                Toast.makeText(getActivity(), RestTestApplication.ADD_HEADER_MISSING_KEY, Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(getActivity(), RestTestApplication.ADD_HEADER_MISSING, Toast.LENGTH_LONG).show();
-            }
+           showHeaderDialogFragment();
         } else if(view.getId() == R.id.reset) {
             urlContent.setText("");
             if(headers.size() > 0) {
@@ -144,45 +131,10 @@ public class GetFragment extends Fragment implements View.OnClickListener {
             reset.setEnabled(false);
             viewResponse.setEnabled(false);
         }else if(view.getId() == R.id.get_request) {
-            int code = 1;
-            if(headers.size() > 0 && !isLastHeaderSaved) {
-                code = saveLastHeader();
-            }
-            if(code == 1) {
-                executeGet();
-            }
+            executeGet();
         } else if(view.getId() == R.id.view_response) {
             showResponseDialogFragment();
         }
-    }
-
-    /**
-     * This method saves the last header that was entered. Up until now only the (n-1)th header is
-     * getting saved every time we add a new header.
-     */
-    private int saveLastHeader() {
-        int position = headers.size() - 1;
-        EditText headerKey = (EditText) headersList.getChildAt(position).findViewById(R.id.header_key);
-        String key = headerKey.getText().toString();
-        EditText headerValue = (EditText) headersList.getChildAt(position).findViewById(R.id.header_value);
-        String value = headerValue.getText().toString();
-
-        HeaderHelper header = headers.get(position);
-        if(!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value) && !isLastHeaderSaved) {
-            header.setHeaderKey(key);
-            header.setHeaderValue(value);
-            isLastHeaderSaved = true;
-            return 1;
-        } else if(!TextUtils.isEmpty(key) && TextUtils.isEmpty(value)) {
-            Toast.makeText(getActivity(), RestTestApplication.HEADER_MISSING_VALUE, Toast.LENGTH_LONG).show();
-        } else if(TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
-            Toast.makeText(getActivity(), RestTestApplication.HEADER_MISSING_KEY, Toast.LENGTH_LONG).show();
-        } else {
-            // Do nothing...
-            // Ignore this header and proceed with the request
-            return 1;
-        }
-        return -1;
     }
 
     private void executeGet() {
@@ -231,6 +183,12 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         popupWindow.showAtLocation(getActivity().findViewById(android.R.id.content), Gravity.CENTER, 0, 0);
     }
 
+    private void showHeaderDialogFragment() {
+        HeaderDialogFragment headerDialogFragment = HeaderDialogFragment.getInstance();
+        headerDialogFragment.setTargetFragment(this, HEADER_CODE);
+        headerDialogFragment.show(getActivity().getFragmentManager(), "dialogHeader");
+    }
+
     /**
      * Method to display the ResponseFragment. Call this method to see the returned response headers
      * and the response body in a dialog fragment
@@ -244,8 +202,8 @@ public class GetFragment extends Fragment implements View.OnClickListener {
         bundle.putSerializable("HashMap", hashmap);
 
         bundle.putString("ResponseMessage", responseMessage);
-        ResponseFragment responseFragment = ResponseFragment.newInstance(bundle);
-        responseFragment.show(getActivity().getFragmentManager(), "dialog");
+        ResponseDialogFragment responseDialogFragment = ResponseDialogFragment.newInstance(bundle);
+        responseDialogFragment.show(getActivity().getFragmentManager(), "dialog");
     }
 
     /**
@@ -268,7 +226,12 @@ public class GetFragment extends Fragment implements View.OnClickListener {
                     }
                 }
                 code = connection.getResponseCode();
-                InputStream stream = connection.getInputStream();
+                InputStream stream;
+                if(code < 400) {
+                    stream = connection.getInputStream();
+                } else {
+                    stream = connection.getErrorStream();
+                }
                 BufferedReader reader = null;
                 StringBuilder builder = new StringBuilder();
                 String line;
@@ -348,7 +311,12 @@ public class GetFragment extends Fragment implements View.OnClickListener {
                     }
                 }
                 code = connection.getResponseCode();
-                InputStream stream = connection.getInputStream();
+                InputStream stream;
+                if(code < 400) {
+                    stream = connection.getInputStream();
+                } else {
+                    stream = connection.getErrorStream();
+                }
                 BufferedReader reader = null;
                 StringBuilder builder = new StringBuilder();
                 String line;

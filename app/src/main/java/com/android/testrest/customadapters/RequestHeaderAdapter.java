@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
+import android.widget.TextView;
 
 import com.android.testrest.R;
 import com.android.testrest.helpers.HeaderHelper;
@@ -35,9 +35,9 @@ public class RequestHeaderAdapter extends ArrayAdapter<HeaderHelper> {
             rowView = inflater.inflate(R.layout.request_headers_layout, parent, false);
         }
         HeaderHelper header = headers.get(position);
-        EditText key = (EditText) rowView.findViewById(R.id.header_key);
+        TextView key = (TextView) rowView.findViewById(R.id.header_key);
         key.setText(header.getHeaderKey());
-        EditText value = (EditText) rowView.findViewById(R.id.header_value);
+        TextView value = (TextView) rowView.findViewById(R.id.header_value);
         value.setText(header.getHeaderValue());
         return rowView;
     }

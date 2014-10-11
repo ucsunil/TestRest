@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">TestRest</string>
+    <string name="app_name">TestREST</string>
     <string name="drawer_open">Opening list of REST request choices</string>
     <string name="drawer_close">Closing list of REST request choices</string>
     <string name="get">GET</string>
@@ -10,9 +10,8 @@
     <string name="delete">DELETE</string>
     <string name="url">URL</string>
     <string name="hint_url">Enter the URL to query here...</string>
-    <string name="header_key_hint">key</string>
-    <string name="header_value_hint">value</string>
-    <string name="view_response">Response</string>
+    <string name="header_key">Header Key  :</string>
+    <string name="header_value">Header Value:</string>
     <string name="ok">OK</string>
     <string name="result">Result</string>
     <string name="reset">Reset</string>
@@ -22,6 +21,9 @@
     <string name="body_hint">Enter the request payload here...</string>
     <string name="type">Content-Type:</string>
     <string name="delete_headers">DELETE SELECTED HEADER(S)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="view_response">Response</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

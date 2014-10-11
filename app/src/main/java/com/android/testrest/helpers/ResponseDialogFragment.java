@@ -22,11 +22,11 @@ import java.util.Map;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link ResponseFragment#newInstance} factory method to
+ * Use the {@link ResponseDialogFragment#newInstance} factory method to
  * create an instance of this fragment.
  *
  */
-public class ResponseFragment extends DialogFragment {
+public class ResponseDialogFragment extends DialogFragment {
 
     private ListView responseHeadersList = null;
     private TextView responseContent = null;
@@ -35,8 +35,8 @@ public class ResponseFragment extends DialogFragment {
     private ResponseHeaderAdapter responseHeaderAdapter = null;
     private String responseMessage;
 
-    public static ResponseFragment newInstance(Bundle bundle) {
-        ResponseFragment fragment = new ResponseFragment();
+    public static ResponseDialogFragment newInstance(Bundle bundle) {
+        ResponseDialogFragment fragment = new ResponseDialogFragment();
         fragment.setArguments(bundle);
         return fragment;
     }
