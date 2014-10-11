@@ -1,10 +1,14 @@
 package com.android.testrest;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -26,12 +30,24 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
     private PostFragment postFragment = null;
     private PutFragment putFragment = null;
     private DeleteFragment deleteFragment = null;
+    private FragmentManager fragmentManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rest_home);
 
+        fragmentManager = getFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        fragmentManager.addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                Fragment fr = fragmentManager.findFragmentById(R.id.content);
+                if(fr!=null){
+                    Log.e("fragment=", fr.getClass().getSimpleName());
+                }
+            }
+        });
         choices = (ListView) findViewById(R.id.choices);
         choices.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_row, RestTestApplication.requests));
         choices.setOnItemClickListener(this);
@@ -83,16 +99,23 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
             getFragment = GetFragment.newInstance();
         }
         if(!getFragment.isVisible()) {
-            getFragmentManager().beginTransaction().replace(R.id.content, getFragment).commit();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.content, getFragment).commit();
+            //transaction.addToBackStack(null);
+            //transaction.commit();
         }
     }
 
     private void showPostFragment() {
+
         if(postFragment == null) {
             postFragment = PostFragment.newInstance();
         }
         if(!postFragment.isVisible()) {
-            getFragmentManager().beginTransaction().replace(R.id.content, postFragment).commit();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.content, postFragment).commit();
+            //transaction.addToBackStack(null);
+            //transaction.commit();
         }
     }
 
@@ -101,7 +124,10 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
             putFragment = PutFragment.newInstance();
         }
         if(!putFragment.isVisible()) {
-            getFragmentManager().beginTransaction().replace(R.id.content, putFragment).commit();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.content, putFragment).commit();
+            //transaction.addToBackStack(null);
+            //transaction.commit();
         }
     }
 
@@ -110,7 +136,10 @@ public class RestHome extends Activity implements AdapterView.OnItemClickListene
             deleteFragment = DeleteFragment.newInstance();
         }
         if(!deleteFragment.isVisible()) {
-            getFragmentManager().beginTransaction().replace(R.id.content, deleteFragment).commit();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.content, deleteFragment).commit();
+            //transaction.addToBackStack(null);
+            //transaction.commit();
         }
     }
 

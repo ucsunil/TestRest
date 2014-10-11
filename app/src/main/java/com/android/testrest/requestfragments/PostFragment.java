@@ -6,8 +6,10 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.SparseBooleanArray;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -24,6 +26,7 @@ import android.widget.Toast;
 import com.android.testrest.R;
 import com.android.testrest.RestTestApplication;
 import com.android.testrest.customadapters.RequestHeaderAdapter;
+import com.android.testrest.helpers.ActionModeListener;
 import com.android.testrest.helpers.HeaderHelper;
 import com.android.testrest.helpers.ResponseFragment;
 
@@ -47,6 +50,7 @@ import javax.net.ssl.HttpsURLConnection;
  */
 public class PostFragment extends Fragment implements View.OnClickListener {
 
+    private final int fragmentFlag = 2;
     ArrayList<HeaderHelper> headers = null;
     RequestHeaderAdapter requestHeaderAdapter = null;
     Button addHeader = null;
@@ -58,6 +62,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
     Button reset = null, post = null, viewResponse = null;
     Map<String, List<String>> resultHeaders = null;
     String responseMessage = null;
+    boolean isLastHeaderSaved = false;
 
     public static PostFragment newInstance() {
         PostFragment fragment = new PostFragment();
@@ -86,6 +91,16 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         addHeader.setOnClickListener(this);
         headersList = (ListView) view.findViewById(R.id.headers);
         headersList.setAdapter(requestHeaderAdapter);
+        headersList.setMultiChoiceModeListener(new ActionModeListener(getActivity(), this, headersList, fragmentFlag));
+        headersList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+        headersList.setOnItemLongClickListener(new ListView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
+                saveLastHeader();
+                headersList.setItemChecked(position, true);
+                return true;
+            }
+        });
         urlContent = (EditText) view.findViewById(R.id.url);
         contentType = (Spinner) view.findViewById(R.id.content_type);
         contentType.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
@@ -115,6 +130,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
+        isLastHeaderSaved = false;
         if(view.getId() == R.id.add_header) {
             if(headersList.getCount() == 0) {
                 HeaderHelper header = new HeaderHelper();
@@ -143,6 +159,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             }
         } else if(view.getId() == R.id.reset) {
             urlContent.setText("");
+            contentType.setSelection(0);
             if(headers.size() > 0) {
                 headers.clear();
                 requestHeaderAdapter.notifyDataSetChanged();
@@ -155,7 +172,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         }else if(view.getId() == R.id.request) {
             test();
             int code = 1;
-            if(headers.size() > 0) {
+            if(headers.size() > 0 && !isLastHeaderSaved) {
                 code = saveLastHeader();
             }
             if(code == 1) {
@@ -178,9 +195,10 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         String value = headerValue.getText().toString();
 
         HeaderHelper header = headers.get(position);
-        if(!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
+        if(!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value) && !isLastHeaderSaved) {
             header.setHeaderKey(key);
             header.setHeaderValue(value);
+            isLastHeaderSaved = true;
             return 1;
         } else if(!TextUtils.isEmpty(key) && TextUtils.isEmpty(value)) {
             Toast.makeText(getActivity(), RestTestApplication.HEADER_MISSING_VALUE, Toast.LENGTH_LONG).show();
@@ -327,6 +345,8 @@ public class PostFragment extends Fragment implements View.OnClickListener {
 
         @Override
         protected void onPostExecute(Integer code) {
+            viewResponse.setEnabled(true);
+            reset.setEnabled(true);
             if(code == -1) {
                 // Massive application level failure!!
                 showErrorPopup(RestTestApplication.APP_FAILURE);
@@ -335,24 +355,16 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             if(code >= 200 && code <= 299) {
                 resultArea.setBackgroundColor(Color.GREEN);
                 resultMessage.setText(RestTestApplication.QUERY_SUCCESS + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 300 && code <= 399) {
                 resultArea.setBackgroundColor(Color.YELLOW);
                 resultMessage.setText(RestTestApplication.QUERY_REDIRECT + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 400 && code <= 499) {
                 resultArea.setBackgroundColor(Color.RED);
                 resultMessage.setText(RestTestApplication.QUERY_FAILURE + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 500 && code <= 599) {
                 resultArea.setBackgroundColor(Color.BLUE);
                 resultMessage.setTextColor(Color.RED);
                 resultMessage.setText(RestTestApplication.SERVER_ERROR + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             }
         }
     }
@@ -424,6 +436,8 @@ public class PostFragment extends Fragment implements View.OnClickListener {
 
         @Override
         protected void onPostExecute(Integer code) {
+            viewResponse.setEnabled(true);
+            reset.setEnabled(true);
             if(code == -1) {
                 // Massive application level failure!!
                 showErrorPopup(RestTestApplication.APP_FAILURE);
@@ -432,24 +446,16 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             if(code >= 200 && code <= 299) {
                 resultArea.setBackgroundColor(Color.GREEN);
                 resultMessage.setText(RestTestApplication.QUERY_SUCCESS + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 300 && code <= 399) {
                 resultArea.setBackgroundColor(Color.YELLOW);
                 resultMessage.setText(RestTestApplication.QUERY_REDIRECT + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 400 && code <= 499) {
                 resultArea.setBackgroundColor(Color.RED);
                 resultMessage.setText(RestTestApplication.QUERY_FAILURE + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             } else if(code >= 500 && code <= 599) {
                 resultArea.setBackgroundColor(Color.BLUE);
                 resultMessage.setTextColor(Color.RED);
                 resultMessage.setText(RestTestApplication.SERVER_ERROR + code);
-                viewResponse.setEnabled(true);
-                reset.setEnabled(true);
             }
         }
     }
@@ -461,5 +467,31 @@ public class PostFragment extends Fragment implements View.OnClickListener {
                 "\"password\":\"india1234\"," +
                 "\"appKey\":\"NEXT_TEXT_01\"" +
                 "}");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        urlContent.setText("");
+        postBody.setText("");
+        contentType.setSelection(0);
+    }
+
+    public boolean performActions(MenuItem item) {
+        SparseBooleanArray checked = headersList.getCheckedItemPositions();
+
+        switch (item.getItemId()) {
+            case R.id.delete:
+                int count = 0;
+                for (int i = 0; i < checked.size(); i++) {
+                    int position = checked.keyAt(i);
+                    headers.remove(position - count);
+                    requestHeaderAdapter.notifyDataSetChanged();
+                    count++;
+                }
+                return true;
+        }
+        return false;
     }
 }
